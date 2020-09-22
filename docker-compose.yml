@@ -4,13 +4,17 @@ services:
   db:
     restart: always
     image: postgres:9.6-alpine
+    environment:
+      POSTGRES_PASSWORD: ck74pro23
+      POSTGRES_DB: mastodon_production
+      POSTGRES_USER: mastodon
     shm_size: 256mb
     networks:
       - internal_network
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
     volumes:
-      - ./postgres:/var/lib/postgresql/data
+      - /mnt/disk2t/mastodon/postgres:/var/lib/postgresql/data
 
   redis:
     restart: always
@@ -43,23 +47,30 @@ services:
 
   web:
     build: .
-    image: tootsuite/mastodon
+    image: tootsuite/mastodon:v3.2.0
     restart: always
     env_file: .env.production
-    command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000"
+    command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
+    environment:
+      - VIRTUAL_HOST=nemushee.net
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=nemushee.net
+      - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - external_network
+      - front
       - internal_network
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
-    ports:
-      - "127.0.0.1:3000:3000"
+    expose:
+        - "3000"
     depends_on:
       - db
       - redis
 #      - es
     volumes:
-      - ./public/system:/mastodon/public/system
+      - ./public/assets:/mastodon/public/assets
+      - ./public/packs:/mastodon/public/packs
+      - /mnt/disk2t/mastodon/public/system:/mastodon/public/system
 
   streaming:
     build: .
@@ -67,13 +78,18 @@ services:
     restart: always
     env_file: .env.production
     command: node ./streaming
+    environment:
+      - VIRTUAL_HOST=stream.nemushee.net
+      - VIRTUAL_PORT=4000
+      - LETSENCRYPT_HOST=stream.nemushee.net
+      - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - external_network
+      - front
       - internal_network
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
-    ports:
-      - "127.0.0.1:4000:4000"
+    expose:
+        - "4000"
     depends_on:
       - db
       - redis
@@ -88,10 +104,11 @@ services:
       - db
       - redis
     networks:
-      - external_network
+      - front
       - internal_network
     volumes:
-      - ./public/system:/mastodon/public/system
+      - /mnt/disk2t/mastodon/public/system:/mastodon/public/system
+
 ## Uncomment to enable federation with tor instances along with adding the following ENV variables
 ## http_proxy=http://privoxy:8118
 ## ALLOW_ACCESS_TO_HIDDEN_SERVICE=true
@@ -109,7 +126,52 @@ services:
 #      - external_network
 #      - internal_network
 
+  nginx-proxy:
+    image: jwilder/nginx-proxy:latest
+    container_name: nginx-proxy
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - html:/usr/share/nginx/html
+      - dhparam:/etc/nginx/dhparam
+      - vhost:/etc/nginx/vhost.d
+      - certs:/etc/nginx/certs:ro
+      - conf:/etc/nginx/conf.d
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    environment:
+      - ENABLE_IPV6=false
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy"
+    networks:
+      - front
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt
+    depends_on:
+      - nginx-proxy
+    volumes:
+      - certs:/etc/nginx/certs:rw
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - front
+
 networks:
-  external_network:
+  front:
+    external: true
   internal_network:
     internal: true
+
+volumes:
+  certs:
+  html:
+  vhost:
+  dhparam:
+  conf:
+    driver_opts:
+        type: none
+        device: /home/sheeptech/nginx
+        o: bind

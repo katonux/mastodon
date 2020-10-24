@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ck74pro23
       POSTGRES_DB: mastodon_production
       POSTGRES_USER: mastodon
-    shm_size: 256mb
+    shm_size: 64MB
     networks:
       - internal_network
     healthcheck:

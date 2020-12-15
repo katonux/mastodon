@@ -70,19 +70,24 @@ services:
     volumes:
       - ./public/assets:/mastodon/public/assets
       - ./public/packs:/mastodon/public/packs
-      - /mnt/disk2t/mastodon/public/system:/mastodon/public/system
 
   storage:
     image: minio/minio
     volumes:
-     - /mnt/disk2t/nemushee:/export
-    expose:
-      - "9000"
+      - ./storage/config:/root/.minio
+      - /mnt/disk2t/nemushee:/export
+    ports:
+      - "9000:9000"
     networks:
+      - front
       - internal_network
     environment:
-     MINIO_ACCESS_KEY: hogehoge
-     MINIO_SECRET_KEY: hogehoge
+      - VIRTUAL_HOST=media.nemushee.net
+      - VIRTUAL_PORT=9000
+      - LETSENCRYPT_HOST=media.nemushee.net
+      - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
+      - MINIO_ACCESS_KEY=hogehoge
+      - MINIO_SECRET_KEY=hogehoge
     command: server /export
 
   streaming:

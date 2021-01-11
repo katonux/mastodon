@@ -1,0 +1,140 @@
+version: '3.4'
+services:
+
+  db:
+    image: postgres:9.6-alpine
+    environment:
+      POSTGRES_PASSWORD: ck74pro23
+      POSTGRES_DB: mastodon_production
+      POSTGRES_USER: mastodon
+    networks:
+      - nemushee_internal
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "mastodon", "-d", "mastodon_production"]
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-pear]
+
+  redis:
+    image: redis:6.0-alpine
+    networks:
+      - nemushee_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+    volumes:
+      - redis:/data
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-pear]
+
+  web:
+    image: ghcr.io/katonux/nemushee/mastodon:latest
+    env_file: .env.production
+    command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
+    environment:
+      - VIRTUAL_HOST=nemushee.net
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=nemushee.net
+      - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
+    networks:
+      - front
+      - nemushee_internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
+    volumes:
+      - assets:/mastodon/public/assets
+      - packs:/mastodon/public/packs
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-pear]
+
+  storage:
+    image: minio/minio
+    volumes:
+      - storage:/export:z
+    networks:
+      - front
+      - nemushee_internal
+    environment:
+      - VIRTUAL_HOST=media.nemushee.net
+      - VIRTUAL_PORT=9000
+      - LETSENCRYPT_HOST=media.nemushee.net
+      - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
+      - MINIO_ACCESS_KEY=7N8OoUsyp80o
+      - MINIO_SECRET_KEY=6Wl616aNl838
+    command: server /export
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-fig]
+
+  streaming:
+    image: ghcr.io/katonux/nemushee/mastodon:latest
+    env_file: .env.production
+    command: node ./streaming
+    environment:
+      - VIRTUAL_HOST=stream.nemushee.net
+      - VIRTUAL_PORT=4000
+      - LETSENCRYPT_HOST=stream.nemushee.net
+      - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
+    networks:
+      - front
+      - nemushee_internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-pear]
+
+  sidekiq:
+    image: ghcr.io/katonux/nemushee/mastodon:latest
+    env_file: .env.production
+    command: bundle exec sidekiq -c 2
+    networks:
+      - nemushee_internal
+    volumes:
+      - sidekiq:/mastodon/public/system
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-pear]
+        
+  adminer:
+    image: adminer:latest
+    networks:
+      - nemushee_internal
+    ports:
+      - 8443:8080
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-pear]
+
+volumes:
+  postgres:
+   driver: local
+  redis:
+    driver: local
+  assets:
+    driver: local
+  packs:
+    driver: local
+  sidekiq:
+    driver: local
+  storage:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/disk2t/nemushee
+
+networks:
+  front:
+    external: true
+  nemushee_internal:
+    internal: true
+    external: true

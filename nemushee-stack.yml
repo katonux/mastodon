@@ -98,11 +98,9 @@ services:
     command: bundle exec sidekiq -c 2
     networks:
       - nemushee_internal
-    volumes:
-      - sidekiq:/mastodon/public/system
     deploy:
       placement:
-        constraints: [node.hostname == spt-node-pear]
+        constraints: [node.platform.arch == x86_64]
         
   adminer:
     image: adminer:latest

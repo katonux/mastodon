@@ -14,7 +14,7 @@ services:
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "mastodon"]
     volumes:
-      - /mnt/disk2t/mastodon/postgres:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
 
   redis:
     restart: always
@@ -24,7 +24,7 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
     volumes:
-      - ./redis:/data
+      - redis:/data
 
 #  es:
 #    restart: always
@@ -47,7 +47,7 @@ services:
 
   web:
     build: .
-    image: tootsuite/mastodon:v3.2.0
+    image: ghcr.io/katonux/nemushee/mastodon:latest
     restart: always
     env_file: .env.production
     command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
@@ -57,42 +57,37 @@ services:
       - LETSENCRYPT_HOST=nemushee.net
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - front
       - internal_network
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
     expose:
-        - "3000"
+      - "3000"
     depends_on:
       - db
       - redis
 #      - es
     volumes:
-      - ./public/assets:/mastodon/public/assets
-      - ./public/packs:/mastodon/public/packs
+      - assets:/mastodon/public/assets
+      - packs:/mastodon/public/packs
 
   storage:
     image: minio/minio
     volumes:
-      - ./storage/config:/root/.minio
-      - /mnt/disk2t/nemushee:/export
-    ports:
-      - "9000:9000"
+      - storage:/export
+    expose:
+      - "9000"
     networks:
-      - front
       - internal_network
     environment:
       - VIRTUAL_HOST=media.nemushee.net
       - VIRTUAL_PORT=9000
       - LETSENCRYPT_HOST=media.nemushee.net
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
-      - MINIO_ACCESS_KEY=hogehoge
-      - MINIO_SECRET_KEY=hogehoge
     command: server /export
 
   streaming:
     build: .
-    image: tootsuite/mastodon
+    image: ghcr.io/katonux/nemushee/mastodon:latest
     restart: always
     env_file: .env.production
     command: node ./streaming
@@ -102,50 +97,46 @@ services:
       - LETSENCRYPT_HOST=stream.nemushee.net
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - front
       - internal_network
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
     expose:
-        - "4000"
+      - "4000"
     depends_on:
       - db
       - redis
 
   sidekiq:
     build: .
-    image: tootsuite/mastodon
+    image: ghcr.io/katonux/nemushee/mastodon:latest
     restart: always
     env_file: .env.production
-    command: bundle exec sidekiq
+    command: bundle exec sidekiq -c 2
     depends_on:
       - db
       - redis
     networks:
-      - front
       - internal_network
     volumes:
-      - /mnt/disk2t/mastodon/public/system:/mastodon/public/system
+      - sidekiq:/mastodon/public/system
 
-## Uncomment to enable federation with tor instances along with adding the following ENV variables
-## http_proxy=http://privoxy:8118
-## ALLOW_ACCESS_TO_HIDDEN_SERVICE=true
-#  tor:
-#    image: sirboops/tor
-#    networks:
-#      - external_network
-#      - internal_network
-#
-#  privoxy:
-#    image: sirboops/privoxy
-#    volumes:
-#      - ./priv-config:/opt/config
-#    networks:
-#      - external_network
-#      - internal_network
+volumes:
+  postgres:
+   driver: local
+  redis:
+    driver: local
+  assets:
+    driver: local
+  packs:
+    driver: local
+  sidekiq:
+    driver: local
+  storage:
+    driver: local
+    driver_opts:
+      type: none
+      device: /mnt/disk2t/nemushee
 
 networks:
-  front:
-    external: true
   internal_network:
     internal: true

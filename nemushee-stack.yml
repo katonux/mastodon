@@ -47,6 +47,7 @@ services:
       - assets:/mastodon/public/assets
       - packs:/mastodon/public/packs
     deploy:
+      replicas: 2
       placement:
         constraints: [node.hostname == spt-node-pear]
 
@@ -89,8 +90,9 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
     deploy:
+      replicas: 2
       placement:
-        constraints: [node.hostname == spt-node-pear]
+        constraints: [node.platform.arch == x86_64]
 
   sidekiq:
     image: ghcr.io/katonux/nemushee/mastodon:latest
@@ -99,6 +101,7 @@ services:
     networks:
       - nemushee_internal
     deploy:
+      replicas: 6
       placement:
         constraints: [node.platform.arch == x86_64]
         

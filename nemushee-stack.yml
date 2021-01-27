@@ -1,51 +1,33 @@
-version: '3'
+version: '3.4'
 services:
 
   db:
-    restart: always
     image: postgres:9.6-alpine
     env_file: env/db.env
-    shm_size: 64MB
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "mastodon"]
+      test: ["CMD", "pg_isready", "-U", "mastodon", "-d", "mastodon_production"]
     volumes:
       - postgres:/var/lib/postgresql/data
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-pear]
 
   redis:
-    restart: always
     image: redis:6.0-alpine
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
     volumes:
       - redis:/data
-
-#  es:
-#    restart: always
-#    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.10
-#    environment:
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#      - "cluster.name=es-mastodon"
-#      - "discovery.type=single-node"
-#      - "bootstrap.memory_lock=true"
-#    networks:
-#      - internal_network
-#    healthcheck:
-#      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
-#    volumes:
-#      - ./elasticsearch:/usr/share/elasticsearch/data
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-pear]
 
   web:
-    build: .
     image: ghcr.io/katonux/nemushee/mastodon:latest
-    restart: always
     env_file: .env.production
     command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
     environment:
@@ -54,38 +36,43 @@ services:
       - LETSENCRYPT_HOST=nemushee.net
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - internal_network
+      - front
+      - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
-    expose:
-      - "3000"
-    depends_on:
-      - db
-      - redis
-#      - es
     volumes:
       - assets:/mastodon/public/assets
       - packs:/mastodon/public/packs
+    deploy:
+      replicas: 2
+      placement:
+        constraints: [node.hostname == spt-node-pear]
 
   storage:
     image: minio/minio
     volumes:
-      - storage:/export
-    expose:
-      - "9000"
+      - storage:/export:z
     networks:
-      - internal_network
+      - front
+      - nemushee_internal
+    env_file: env/minio.env
     environment:
       - VIRTUAL_HOST=media.nemushee.net
       - VIRTUAL_PORT=9000
       - LETSENCRYPT_HOST=media.nemushee.net
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     command: server /export
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-fig]
 
   streaming:
-    build: .
     image: ghcr.io/katonux/nemushee/mastodon:latest
-    restart: always
     env_file: .env.production
     command: node ./streaming
     environment:
@@ -94,28 +81,35 @@ services:
       - LETSENCRYPT_HOST=stream.nemushee.net
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - internal_network
+      - front
+      - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
-    expose:
-      - "4000"
-    depends_on:
-      - db
-      - redis
+    deploy:
+      replicas: 2
+      placement:
+        constraints: [node.platform.arch == x86_64]
 
   sidekiq:
-    build: .
     image: ghcr.io/katonux/nemushee/mastodon:latest
-    restart: always
     env_file: .env.production
     command: bundle exec sidekiq -c 2
-    depends_on:
-      - db
-      - redis
     networks:
-      - internal_network
-    volumes:
-      - sidekiq:/mastodon/public/system
+      - nemushee_internal
+    deploy:
+      replicas: 6
+      placement:
+        constraints: [node.platform.arch == x86_64]
+        
+  adminer:
+    image: adminer:latest
+    networks:
+      - nemushee_internal
+    ports:
+      - 8443:8080
+    deploy:
+      placement:
+        constraints: [node.hostname == spt-node-pear]
 
 volumes:
   postgres:
@@ -132,8 +126,12 @@ volumes:
     driver: local
     driver_opts:
       type: none
+      o: bind
       device: /mnt/disk2t/nemushee
 
 networks:
-  internal_network:
+  front:
+    external: true
+  nemushee_internal:
     internal: true
+    external: true

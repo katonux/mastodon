@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: mastodon
     shm_size: 64MB
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "mastodon"]
     volumes:
@@ -20,7 +20,7 @@ services:
     restart: always
     image: redis:6.0-alpine
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
     volumes:
@@ -35,7 +35,7 @@ services:
 #      - "discovery.type=single-node"
 #      - "bootstrap.memory_lock=true"
 #    networks:
-#      - internal_network
+#      - nemushee_internal
 #    healthcheck:
 #      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
 #    volumes:
@@ -57,7 +57,7 @@ services:
       - LETSENCRYPT_HOST=nemushee.net
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
     expose:
@@ -97,7 +97,7 @@ services:
       - LETSENCRYPT_HOST=stream.nemushee.net
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
     expose:
@@ -116,7 +116,7 @@ services:
       - db
       - redis
     networks:
-      - internal_network
+      - nemushee_internal
     volumes:
       - sidekiq:/mastodon/public/system
 
@@ -138,5 +138,5 @@ volumes:
       device: /mnt/disk2t/nemushee
 
 networks:
-  internal_network:
-    internal: true
+  nemushee_internal:
+    external: true

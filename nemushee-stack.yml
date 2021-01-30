@@ -40,9 +40,6 @@ services:
       - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
-    volumes:
-      - assets:/mastodon/public/assets
-      - packs:/mastodon/public/packs
     deploy:
       replicas: 2
       placement:
@@ -107,10 +104,6 @@ volumes:
   nemushee_postgres_v2:
    external: true
   redis:
-    driver: local
-  assets:
-    driver: local
-  packs:
     driver: local
   sidekiq:
     driver: local

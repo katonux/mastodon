@@ -63,9 +63,6 @@ services:
       - db
       - redis
 #      - es
-    volumes:
-      - assets:/mastodon/public/assets
-      - packs:/mastodon/public/packs
 
   # storage:
   #   image: minio/minio
@@ -121,10 +118,6 @@ volumes:
   nemushee_postgres_v2:
    external: true
   redis:
-    driver: local
-  assets:
-    driver: local
-  packs:
     driver: local
   sidekiq:
     driver: local

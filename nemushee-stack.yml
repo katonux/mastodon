@@ -104,16 +104,6 @@ services:
       replicas: 6
       placement:
         constraints: [node.platform.arch == x86_64]
-        
-  adminer:
-    image: adminer:3.2.1
-    networks:
-      - nemushee_internal
-    ports:
-      - 8443:8080
-    deploy:
-      placement:
-        constraints: [node.hostname == spt-node-pear]
 
 volumes:
   postgres:

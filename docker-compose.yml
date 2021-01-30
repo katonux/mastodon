@@ -7,7 +7,7 @@ services:
     env_file: env/db.env
     shm_size: 64MB
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "mastodon"]
     volumes:
@@ -17,7 +17,7 @@ services:
     restart: always
     image: redis:6.0-alpine
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
     volumes:
@@ -32,7 +32,7 @@ services:
 #      - "discovery.type=single-node"
 #      - "bootstrap.memory_lock=true"
 #    networks:
-#      - internal_network
+#      - nemushee_internal
 #    healthcheck:
 #      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
 #    volumes:
@@ -48,13 +48,13 @@ services:
     restart: always
     env_file: .env.production
     command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
-    environment:
-      - VIRTUAL_HOST=nemushee.net
-      - VIRTUAL_PORT=3000
-      - LETSENCRYPT_HOST=nemushee.net
-      - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
+    # environment:
+    #   - VIRTUAL_HOST=nemushee.net
+    #   - VIRTUAL_PORT=3000
+    #   - LETSENCRYPT_HOST=nemushee.net
+    #   - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
     expose:
@@ -67,20 +67,20 @@ services:
       - assets:/mastodon/public/assets
       - packs:/mastodon/public/packs
 
-  storage:
-    image: minio/minio
-    volumes:
-      - storage:/export
-    expose:
-      - "9000"
-    networks:
-      - internal_network
-    environment:
-      - VIRTUAL_HOST=media.nemushee.net
-      - VIRTUAL_PORT=9000
-      - LETSENCRYPT_HOST=media.nemushee.net
-      - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
-    command: server /export
+  # storage:
+  #   image: minio/minio
+  #   volumes:
+  #     - storage:/export
+  #   expose:
+  #     - "9000"
+  #   networks:
+  #     - nemushee_internal
+  #   environment:
+  #     - VIRTUAL_HOST=media.nemushee.net
+  #     - VIRTUAL_PORT=9000
+  #     - LETSENCRYPT_HOST=media.nemushee.net
+  #     - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
+  #   command: server /export
 
   streaming:
     build: .
@@ -88,13 +88,13 @@ services:
     restart: always
     env_file: .env.production
     command: node ./streaming
-    environment:
-      - VIRTUAL_HOST=stream.nemushee.net
-      - VIRTUAL_PORT=4000
-      - LETSENCRYPT_HOST=stream.nemushee.net
-      - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
+    # environment:
+    #   - VIRTUAL_HOST=stream.nemushee.net
+    #   - VIRTUAL_PORT=4000
+    #   - LETSENCRYPT_HOST=stream.nemushee.net
+    #   - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
     expose:
@@ -113,7 +113,7 @@ services:
       - db
       - redis
     networks:
-      - internal_network
+      - nemushee_internal
     volumes:
       - sidekiq:/mastodon/public/system
 
@@ -135,5 +135,5 @@ volumes:
       device: /mnt/disk2t/nemushee
 
 networks:
-  internal_network:
-    internal: true
+  nemushee_internal:
+    external: true

@@ -70,20 +70,20 @@ services:
       - assets:/mastodon/public/assets
       - packs:/mastodon/public/packs
 
-  storage:
-    image: minio/minio
-    volumes:
-      - storage:/export
-    expose:
-      - "9000"
-    networks:
-      - internal_network
-    environment:
-      - VIRTUAL_HOST=media.nemushee.net
-      - VIRTUAL_PORT=9000
-      - LETSENCRYPT_HOST=media.nemushee.net
-      - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
-    command: server /export
+  # storage:
+  #   image: minio/minio
+  #   volumes:
+  #     - storage:/export
+  #   expose:
+  #     - "9000"
+  #   networks:
+  #     - nemushee_internal
+  #   environment:
+  #     - VIRTUAL_HOST=media.nemushee.net
+  #     - VIRTUAL_PORT=9000
+  #     - LETSENCRYPT_HOST=media.nemushee.net
+  #     - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
+  #   command: server /export
 
   streaming:
     build: .

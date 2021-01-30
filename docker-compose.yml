@@ -11,7 +11,7 @@ services:
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "mastodon"]
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - nemushee_postgres_v2:/var/lib/postgresql/data
 
   redis:
     restart: always
@@ -118,8 +118,8 @@ services:
       - sidekiq:/mastodon/public/system
 
 volumes:
-  postgres:
-   driver: local
+  nemushee_postgres_v2:
+   external: true
   redis:
     driver: local
   assets:

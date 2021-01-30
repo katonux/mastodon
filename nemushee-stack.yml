@@ -9,7 +9,7 @@ services:
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "mastodon", "-d", "mastodon_production"]
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - nemushee_postgres_v2:/var/lib/postgresql/data
     deploy:
       placement:
         constraints: [node.hostname == spt-node-pear]
@@ -104,8 +104,8 @@ services:
         # constraints: [node.platform.arch == x86_64]
 
 volumes:
-  postgres:
-   driver: local
+  nemushee_postgres_v2:
+   external: true
   redis:
     driver: local
   assets:

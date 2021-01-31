@@ -127,6 +127,28 @@ services:
         constraints: [node.hostname == spt-node-pear]
         # constraints: [node.platform.arch == x86_64]
 
+  es:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.10
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "cluster.name=es-mastodon"
+      - "discovery.type=single-node"
+      - "bootstrap.memory_lock=true"
+    networks:
+      - nemushee_internal
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.hostname == spt-node-raspberry]
+
 volumes:
   nemushee_postgres_v2:
    external: true
@@ -140,6 +162,8 @@ volumes:
       type: none
       o: bind
       device: /mnt/disk2t/nemushee
+  elasticsearch:
+    driver: local
 
 networks:
   front:

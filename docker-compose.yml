@@ -23,36 +23,12 @@ services:
     volumes:
       - redis:/data
 
-#  es:
-#    restart: always
-#    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.10
-#    environment:
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#      - "cluster.name=es-mastodon"
-#      - "discovery.type=single-node"
-#      - "bootstrap.memory_lock=true"
-#    networks:
-#      - nemushee_internal
-#    healthcheck:
-#      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
-#    volumes:
-#      - ./elasticsearch:/usr/share/elasticsearch/data
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-
   web:
     build: .
     image: ghcr.io/katonux/nemushee/mastodon:3.3.0
     restart: always
     env_file: .env.production
     command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
-    # environment:
-    #   - VIRTUAL_HOST=nemushee.net
-    #   - VIRTUAL_PORT=3000
-    #   - LETSENCRYPT_HOST=nemushee.net
-    #   - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
       - nemushee_internal
     healthcheck:
@@ -62,22 +38,6 @@ services:
     depends_on:
       - db
       - redis
-#      - es
-
-  # storage:
-  #   image: minio/minio
-  #   volumes:
-  #     - storage:/export
-  #   expose:
-  #     - "9000"
-  #   networks:
-  #     - nemushee_internal
-  #   environment:
-  #     - VIRTUAL_HOST=media.nemushee.net
-  #     - VIRTUAL_PORT=9000
-  #     - LETSENCRYPT_HOST=media.nemushee.net
-  #     - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
-  #   command: server /export
 
   streaming:
     build: .
@@ -85,11 +45,6 @@ services:
     restart: always
     env_file: .env.production
     command: node ./streaming
-    # environment:
-    #   - VIRTUAL_HOST=stream.nemushee.net
-    #   - VIRTUAL_PORT=4000
-    #   - LETSENCRYPT_HOST=stream.nemushee.net
-    #   - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
       - nemushee_internal
     healthcheck:

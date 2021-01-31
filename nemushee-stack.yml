@@ -37,10 +37,19 @@ services:
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
       - front
+      - traefik_ingress
       - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
     deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=overlay"
+        - "traefik.http.routers.nemushee-puma.tls=true"
+        - "traefik.http.routers.nemushee-puma.tls.certresolver=myresolver"
+        - "traefik.http.routers.nemushee-puma.rule=Host(`nemushee.net`)"
+        - "traefik.http.routers.nemushee-puma.entrypoints=websecure"
+        - "traefik.http.services.puma.loadbalancer.server.port=3000"
       replicas: 2
       placement:
         constraints: [node.hostname == spt-node-pear]
@@ -51,6 +60,7 @@ services:
       - storage:/export:z
     networks:
       - front
+      - traefik_ingress
       - nemushee_internal
     env_file: env/minio.env
     environment:
@@ -65,6 +75,14 @@ services:
       timeout: 20s
       retries: 3
     deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=overlay"
+        - "traefik.http.routers.nemushee-minio.tls=true"
+        - "traefik.http.routers.nemushee-minio.tls.certresolver=myresolver"
+        - "traefik.http.routers.nemushee-minio.rule=Host(`media.nemushee.net`)"
+        - "traefik.http.routers.nemushee-minio.entrypoints=websecure"
+        - "traefik.http.services.minio.loadbalancer.server.port=9000"
       placement:
         constraints: [node.hostname == spt-node-fig]
 
@@ -79,10 +97,19 @@ services:
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
       - front
+      - traefik_ingress
       - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
     deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=overlay"
+        - "traefik.http.routers.nemushee-stream.tls=true"
+        - "traefik.http.routers.nemushee-stream.tls.certresolver=myresolver"
+        - "traefik.http.routers.nemushee-stream.rule=Host(`stream.nemushee.net`)"
+        - "traefik.http.routers.nemushee-stream.entrypoints=websecure"
+        - "traefik.http.services.stream.loadbalancer.server.port=4000"
       replicas: 2
       placement:
         constraints: [node.hostname == spt-node-pear]
@@ -116,6 +143,9 @@ volumes:
 
 networks:
   front:
+    external: true
+  traefik_ingress:
+    driver: overlay
     external: true
   nemushee_internal:
     internal: true

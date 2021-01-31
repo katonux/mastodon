@@ -128,7 +128,7 @@ services:
         # constraints: [node.platform.arch == x86_64]
 
   es:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.10
+    image: elasticsearch:7.10.1
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - "cluster.name=es-mastodon"

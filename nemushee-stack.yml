@@ -44,7 +44,7 @@ services:
     deploy:
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=overlay"
+        - "traefik.docker.network=traefik_ingress"
         - "traefik.http.routers.nemushee-puma.tls=true"
         - "traefik.http.routers.nemushee-puma.tls.certresolver=myresolver"
         - "traefik.http.routers.nemushee-puma.rule=Host(`nemushee.net`)"
@@ -77,7 +77,7 @@ services:
     deploy:
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=overlay"
+        - "traefik.docker.network=traefik_ingress"
         - "traefik.http.routers.nemushee-minio.tls=true"
         - "traefik.http.routers.nemushee-minio.tls.certresolver=myresolver"
         - "traefik.http.routers.nemushee-minio.rule=Host(`media.nemushee.net`)"
@@ -104,7 +104,7 @@ services:
     deploy:
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=overlay"
+        - "traefik.docker.network=traefik_ingress"
         - "traefik.http.routers.nemushee-stream.tls=true"
         - "traefik.http.routers.nemushee-stream.tls.certresolver=myresolver"
         - "traefik.http.routers.nemushee-stream.rule=Host(`stream.nemushee.net`)"

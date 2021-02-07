@@ -52,7 +52,7 @@ services:
         - "traefik.http.services.puma.loadbalancer.server.port=3000"
       replicas: 2
       placement:
-        constraints: [node.hostname == spt-node-pear]
+        constraints: [node.platform.arch == x86_64]
 
   storage:
     image: minio/minio
@@ -112,8 +112,7 @@ services:
         - "traefik.http.services.stream.loadbalancer.server.port=4000"
       replicas: 2
       placement:
-        constraints: [node.hostname == spt-node-pear]
-        # constraints: [node.platform.arch == x86_64]
+        constraints: [node.platform.arch == x86_64]
 
   sidekiq:
     image: ghcr.io/katonux/nemushee/mastodon:3.3.0
@@ -124,8 +123,7 @@ services:
     deploy:
       replicas: 4
       placement:
-        constraints: [node.hostname == spt-node-pear]
-        # constraints: [node.platform.arch == x86_64]
+        constraints: [node.platform.arch == x86_64]
 
   es:
     image: elasticsearch:7.10.1

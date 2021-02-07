@@ -121,7 +121,7 @@ services:
     networks:
       - nemushee_internal
     deploy:
-      replicas: 4
+      replicas: 8
       placement:
         constraints: [node.platform.arch == x86_64]
 

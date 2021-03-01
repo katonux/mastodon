@@ -49,7 +49,10 @@ services:
         - "traefik.http.routers.nemushee-puma.tls.certresolver=myresolver"
         - "traefik.http.routers.nemushee-puma.rule=Host(`nemushee.net`)"
         - "traefik.http.routers.nemushee-puma.entrypoints=websecure"
+        - "traefik.http.routers.nemushee-puma.middlewares=streaming-redirect"
         - "traefik.http.services.puma.loadbalancer.server.port=3000"
+        - "traefik.http.middlewares.streaming-redirect.redirectregex.regex=^https://nemushee.net/api/v1/streaming(.*)$$"
+        - "traefik.http.middlewares.streaming-redirect.redirectregex.replacement=https://stream.nemushee.net$$1"
       replicas: 2
       placement:
         constraints: [node.platform.arch == x86_64]

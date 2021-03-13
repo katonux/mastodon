@@ -36,7 +36,6 @@ services:
       - LETSENCRYPT_HOST=nemushee.net
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - front
       - traefik_ingress
       - nemushee_internal
     healthcheck:
@@ -62,7 +61,6 @@ services:
     volumes:
       - storage:/export:z
     networks:
-      - front
       - traefik_ingress
       - nemushee_internal
     env_file: env/minio.env
@@ -99,7 +97,6 @@ services:
       - LETSENCRYPT_HOST=stream.nemushee.net
       - LETSENCRYPT_EMAIL=sheeptech@vivaldi.net
     networks:
-      - front
       - traefik_ingress
       - nemushee_internal
     healthcheck:
@@ -151,7 +148,7 @@ services:
     deploy:
       replicas: 1
       placement:
-        constraints: [node.hostname == spt-node-raspberry]
+        constraints: [node.hostname == spt-node-fig]
 
 volumes:
   nemushee_postgres_v2:
@@ -170,8 +167,6 @@ volumes:
     driver: local
 
 networks:
-  front:
-    external: true
   traefik_ingress:
     driver: overlay
     external: true

@@ -28,6 +28,8 @@
 /node_modules/
 /build/
 
+/env/
+
 # Ignore Vagrant files
 .vagrant/
 

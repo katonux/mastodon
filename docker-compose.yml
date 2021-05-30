@@ -4,112 +4,84 @@ services:
   db:
     restart: always
     image: postgres:9.6-alpine
-    shm_size: 256mb
+    env_file: env/db.env
+    shm_size: 64MB
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
+      test: ["CMD", "pg_isready", "-U", "mastodon"]
     volumes:
-      - ./postgres:/var/lib/postgresql/data
+      - nemushee_postgres_v2:/var/lib/postgresql/data
 
   redis:
     restart: always
     image: redis:6.0-alpine
     networks:
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
     volumes:
-      - ./redis:/data
-
-#  es:
-#    restart: always
-#    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.10
-#    environment:
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#      - "cluster.name=es-mastodon"
-#      - "discovery.type=single-node"
-#      - "bootstrap.memory_lock=true"
-#    networks:
-#      - internal_network
-#    healthcheck:
-#      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
-#    volumes:
-#      - ./elasticsearch:/usr/share/elasticsearch/data
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
+      - redis:/data
 
   web:
     build: .
-    image: tootsuite/mastodon
+    image: ghcr.io/katonux/nemushee/mastodon:3.3.0
     restart: always
     env_file: .env.production
-    command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000"
+    command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
     networks:
-      - external_network
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
-    ports:
-      - "127.0.0.1:3000:3000"
+    expose:
+      - "3000"
     depends_on:
       - db
       - redis
-#      - es
-    volumes:
-      - ./public/system:/mastodon/public/system
 
   streaming:
     build: .
-    image: tootsuite/mastodon
+    image: ghcr.io/katonux/nemushee/mastodon:3.3.0
     restart: always
     env_file: .env.production
     command: node ./streaming
     networks:
-      - external_network
-      - internal_network
+      - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
-    ports:
-      - "127.0.0.1:4000:4000"
+    expose:
+      - "4000"
     depends_on:
       - db
       - redis
 
   sidekiq:
     build: .
-    image: tootsuite/mastodon
+    image: ghcr.io/katonux/nemushee/mastodon:3.3.0
     restart: always
     env_file: .env.production
-    command: bundle exec sidekiq
+    command: bundle exec sidekiq -c 2
     depends_on:
       - db
       - redis
     networks:
-      - external_network
-      - internal_network
+      - nemushee_internal
     volumes:
-      - ./public/system:/mastodon/public/system
-## Uncomment to enable federation with tor instances along with adding the following ENV variables
-## http_proxy=http://privoxy:8118
-## ALLOW_ACCESS_TO_HIDDEN_SERVICE=true
-#  tor:
-#    image: sirboops/tor
-#    networks:
-#      - external_network
-#      - internal_network
-#
-#  privoxy:
-#    image: sirboops/privoxy
-#    volumes:
-#      - ./priv-config:/opt/config
-#    networks:
-#      - external_network
-#      - internal_network
+      - sidekiq:/mastodon/public/system
+
+volumes:
+  nemushee_postgres_v2:
+   external: true
+  redis:
+    driver: local
+  sidekiq:
+    driver: local
+  storage:
+    driver: local
+    driver_opts:
+      type: none
+      device: /mnt/disk2t/nemushee
 
 networks:
-  external_network:
-  internal_network:
-    internal: true
+  nemushee_internal:
+    external: true

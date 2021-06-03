@@ -36,9 +36,6 @@ services:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
     expose:
       - "3000"
-    depends_on:
-      - db
-      - redis
 
   streaming:
     build: .
@@ -52,9 +49,6 @@ services:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
     expose:
       - "4000"
-    depends_on:
-      - db
-      - redis
 
   sidekiq:
     build: .
@@ -62,9 +56,6 @@ services:
     restart: always
     env_file: .env.production
     command: bundle exec sidekiq -c 2
-    depends_on:
-      - db
-      - redis
     networks:
       - nemushee_internal
     volumes:

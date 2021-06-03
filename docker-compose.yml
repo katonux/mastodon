@@ -12,6 +12,7 @@ services:
       test: ["CMD", "pg_isready", "-U", "mastodon", "-d", "mastodon_production"]
     volumes:
       - nemushee_postgres_v2:/var/lib/postgresql/data
+      - /mnt/disk/nemushee-backup:/backup
 
   redis:
     restart: always

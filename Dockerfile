@@ -45,6 +45,8 @@ RUN apt-get update && \
 
 ENV PATH="${PATH}:/opt/ruby/bin:/opt/node/bin"
 
+RUN npm config set unsafe-perm true
+
 RUN npm install -g yarn && \
 	gem install bundler && \
 	apt-get update && \

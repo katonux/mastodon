@@ -28,12 +28,14 @@ services:
     build: .
     image: ghcr.io/katonux/nemushee/nemushee:3.4.0
     restart: always
-    env_file: .env.production
+    env_file: env/production.env
     command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000 -b '0.0.0.0'"
     networks:
       - nemushee_internal
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:3000/health || exit 1"]
+      test: ["CMD-SHELL", "wget --header='Host: nemushee.net' -q --spider --proxy=off localhost:3000/health || exit 1"]
+      retries: 2
+      start_period: "90s"
     expose:
       - "3000"
 
@@ -41,12 +43,14 @@ services:
     build: .
     image: ghcr.io/katonux/nemushee/nemushee:3.4.0
     restart: always
-    env_file: .env.production
+    env_file: env/production.env
     command: node ./streaming
     networks:
       - nemushee_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1"]
+      retries: 2
+      start_period: "60s"
     expose:
       - "4000"
 
@@ -54,7 +58,7 @@ services:
     build: .
     image: ghcr.io/katonux/nemushee/nemushee:3.4.0
     restart: always
-    env_file: .env.production
+    env_file: env/production.env
     command: bundle exec sidekiq -c 2
     networks:
       - nemushee_internal
